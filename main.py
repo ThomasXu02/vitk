@@ -229,12 +229,114 @@ def visualize_registration(fixed_image, registered_image, slice_axis=0):
     axs[1].axis('off')
 
     # Display the overlay of the fixed and registered image slices
-    axs[2].imshow(overlay, origin='lower')
+    axs[2].imshow(overlay, cmap='gray',origin='lower')
     axs[2].set_title('Overlay of Fixed and Registered Slices')
     axs[2].axis('off')
 
     plt.show()
 
+
+
+
+
+def visualize_registration_3d(fixed_image, registered_image):
+    """
+    Visualizes the registration result in 3D using VTK.
+    
+    Args:
+    fixed_image (np.ndarray): The fixed image as a numpy array.
+    registered_image (np.ndarray): The registered moving image as a numpy array.
+    """
+    # Convert numpy arrays to ITK images
+    fixed_image_itk = itk.GetImageViewFromArray(fixed_image)
+    registered_image_itk = itk.GetImageViewFromArray(registered_image)
+    
+    # Save the images to temporary files
+    fixed_image_path = "fixed_image_temp.nrrd"
+    registered_image_path = "registered_image_temp.nrrd"
+    
+    itk.imwrite(fixed_image_itk, fixed_image_path)
+    itk.imwrite(registered_image_itk, registered_image_path)
+    
+    # Read the images using VTK
+    fixed_reader = vtk.vtkNrrdReader()
+    fixed_reader.SetFileName(fixed_image_path)
+    fixed_reader.Update()
+    
+    registered_reader = vtk.vtkNrrdReader()
+    registered_reader.SetFileName(registered_image_path)
+    registered_reader.Update()
+    
+    # Create volume mappers
+    fixed_volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+    fixed_volume_mapper.SetInputConnection(fixed_reader.GetOutputPort())
+    
+    registered_volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+    registered_volume_mapper.SetInputConnection(registered_reader.GetOutputPort())
+    
+    # Create volume properties
+    fixed_volume_property = vtk.vtkVolumeProperty()
+    fixed_volume_property.ShadeOn()
+    fixed_volume_property.SetInterpolationTypeToLinear()
+    
+    registered_volume_property = vtk.vtkVolumeProperty()
+    registered_volume_property.ShadeOn()
+    registered_volume_property.SetInterpolationTypeToLinear()
+    
+    # Create color transfer functions
+    fixed_color_transfer_function = vtk.vtkColorTransferFunction()
+    fixed_color_transfer_function.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    fixed_color_transfer_function.AddRGBPoint(255, 1.0, 0.0, 0.0)
+    fixed_volume_property.SetColor(fixed_color_transfer_function)
+    
+    registered_color_transfer_function = vtk.vtkColorTransferFunction()
+    registered_color_transfer_function.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    registered_color_transfer_function.AddRGBPoint(255, 0.0, 1.0, 0.0)
+    registered_volume_property.SetColor(registered_color_transfer_function)
+    
+    # Create opacity transfer functions
+    fixed_opacity_transfer_function = vtk.vtkPiecewiseFunction()
+    fixed_opacity_transfer_function.AddPoint(0, 0.0)
+    fixed_opacity_transfer_function.AddPoint(255, 1.0)
+    fixed_volume_property.SetScalarOpacity(fixed_opacity_transfer_function)
+    
+    registered_opacity_transfer_function = vtk.vtkPiecewiseFunction()
+    registered_opacity_transfer_function.AddPoint(0, 0.0)
+    registered_opacity_transfer_function.AddPoint(255, 1.0)
+    registered_volume_property.SetScalarOpacity(registered_opacity_transfer_function)
+    
+    # Create volumes
+    fixed_volume = vtk.vtkVolume()
+    fixed_volume.SetMapper(fixed_volume_mapper)
+    fixed_volume.SetProperty(fixed_volume_property)
+    
+    registered_volume = vtk.vtkVolume()
+    registered_volume.SetMapper(registered_volume_mapper)
+    registered_volume.SetProperty(registered_volume_property)
+    
+    # Create a renderer and render window
+    renderer = vtk.vtkRenderer()
+    renderer.AddVolume(fixed_volume)
+    renderer.AddVolume(registered_volume)
+    renderer.SetBackground(0.1, 0.1, 0.1)  # Dark background
+    
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(800, 800)  # Larger window
+    
+    # Create an interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+    
+    # Set the interactor style
+    interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
+    renderWindowInteractor.SetInteractorStyle(interactorStyle)
+    
+    # Initialize and start the interaction
+    renderWindowInteractor.Initialize()
+    renderer.ResetCamera()  # Reset the camera to show the whole volume
+    renderWindow.Render()
+    renderWindowInteractor.Start()
 
 
 
@@ -245,7 +347,10 @@ def main():
     
     fixed_image = itk.array_from_image(itk.imread(filepath1, itk.F))
     registered_image = register_images(filepath1, filepath2)
-    visualize_registration(fixed_image, registered_image)
+    #visualize_registration(fixed_image, registered_image)
+
+    # Visualize the registration result in 3D
+    visualize_registration_3d(fixed_image, registered_image)
 
 if __name__ == "__main__":
     main()
