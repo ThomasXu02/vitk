@@ -118,12 +118,17 @@ def register_images(filepath1, filepath2):
     """
     # Define image type
     PixelType = itk.F
-    Dimension = 3
-    ImageType = itk.Image[PixelType, Dimension]
+    #Dimension = 3
+    #ImageType = itk.Image[PixelType, Dimension]
 
     # Read the images
-    fixed_image = itk.imread(filepath1, ImageType)
-    moving_image = itk.imread(filepath2, ImageType)
+    #fixed_image = itk.imread(filepath1, ImageType)
+    #moving_image = itk.imread(filepath2, ImageType)
+    fixed_image = itk.imread(filepath1, PixelType)
+    moving_image = itk.imread(filepath2, PixelType)
+
+    Dimension = fixed_image.GetImageDimension()
+    ImageType = itk.Image[PixelType, Dimension]
 
     # Initialize the transform
     TransformType = itk.Euler3DTransform[itk.D]
@@ -178,21 +183,70 @@ def register_images(filepath1, filepath2):
 
     return registered_np_image
 
+#def visualize_registration(fixed_image, registered_image, slice_axis=0):
+#    #TODO
+#    return 0
+
+
+
 def visualize_registration(fixed_image, registered_image, slice_axis=0):
-    #TODO
-    return 0
+    """
+    Visualizes the registration result by displaying slices of the fixed image, registered image, and their overlay.
+    
+    Args:
+    fixed_image (np.ndarray): The fixed image as a numpy array.
+    registered_image (np.ndarray): The registered moving image as a numpy array.
+    slice_axis (int): The axis along which to take the slice. Default is 0.
+    """
+    # Determine the slice index as the center of the specified axis
+    slice_index = fixed_image.shape[slice_axis] // 2
+
+    # Extract the central slice along the specified axis for both images
+    if slice_axis == 0:
+        fixed_slice = fixed_image[slice_index, :, :]
+        registered_slice = registered_image[slice_index, :, :]
+    elif slice_axis == 1:
+        fixed_slice = fixed_image[:, slice_index, :]
+        registered_slice = registered_image[:, slice_index, :]
+    elif slice_axis == 2:
+        fixed_slice = fixed_image[:, :, slice_index]
+        registered_slice = registered_image[:, :, slice_index]
+
+    # Create an overlay by combining the fixed and registered slices
+    overlay = np.zeros_like(fixed_slice)
+    overlay = np.stack((fixed_slice, registered_slice, np.zeros_like(fixed_slice)), axis=-1)
+
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+
+    # Display the fixed image slice
+    axs[0].imshow(fixed_slice, cmap='gray', origin='lower')
+    axs[0].set_title('Fixed Image Slice')
+    axs[0].axis('off')
+
+    # Display the registered image slice
+    axs[1].imshow(registered_slice, cmap='gray', origin='lower')
+    axs[1].set_title('Registered Image Slice')
+    axs[1].axis('off')
+
+    # Display the overlay of the fixed and registered image slices
+    axs[2].imshow(overlay, origin='lower')
+    axs[2].set_title('Overlay of Fixed and Registered Slices')
+    axs[2].axis('off')
+
+    plt.show()
 
 
 
 
 
 def main():
-    display_volume(filepath1)
+    #display_volume(filepath1)
     #display_images2d(filepath1, filepath2)
     
-    # fixed_image = itk.array_from_image(itk.imread(filepath1, itk.F))
-    # registered_image = register_images(filepath1, filepath2)
-    # visualize_registration(fixed_image, registered_image)
+    fixed_image = itk.array_from_image(itk.imread(filepath1, itk.F))
+    registered_image = register_images(filepath1, filepath2)
+    visualize_registration(fixed_image, registered_image)
 
 if __name__ == "__main__":
     main()
+
