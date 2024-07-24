@@ -6,41 +6,41 @@ import matplotlib
 import matplotlib.pyplot as plt
 from vtk.util import numpy_support
 
+
 def read_and_extract_slice(filepath):
-    """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
     np_image = itk.GetArrayFromImage(image)
     z_index = np_image.shape[0] // 2
     central_slice = np_image[z_index, :, :]
     return central_slice
 
+
 def display_images2d(filepath1, filepath2):
-    """Displays two images and their difference."""
-    
     slice1 = read_and_extract_slice(filepath1)
     slice2 = read_and_extract_slice(filepath2)
-    
+
     diff_slice = np.abs(slice1 - slice2)
-    
+
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-    
+
     # Display the first image slice
     axs[0].imshow(slice1, cmap='gray', origin='lower')
     axs[0].set_title('Central Slice - Image 1')
     axs[0].axis('off')
-    
+
     # Display the second image slice
     axs[1].imshow(slice2, cmap='gray', origin='lower')
     axs[1].set_title('Central Slice - Image 2')
     axs[1].axis('off')
-    
+
     # Display the difference slice
     axs[2].imshow(diff_slice, cmap='gray', origin='lower')
     axs[2].set_title('Difference Slice')
     axs[2].axis('off')
-    
+
     plt.show()
-    
+
+
 def display_volume_from_path(filePath):
     reader = vtk.vtkNrrdReader()
     reader.SetFileName(filePath)
@@ -90,7 +90,8 @@ def display_volume_from_path(filePath):
     renderer.ResetCamera()
     renderWindow.Render()
     renderWindowInteractor.Start()
-    
+
+
 def display_volume_from_image(vtk_image):
     scalar_range = vtk_image.GetScalarRange()
 
@@ -137,6 +138,7 @@ def display_volume_from_image(vtk_image):
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+
 def display_two_volumes(original_vtk_image, registered_vtk_image):
     def create_volume(vtk_image, color):
         scalar_range = vtk_image.GetScalarRange()
@@ -156,7 +158,7 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
         opacityTransferFunction = vtk.vtkPiecewiseFunction()
         opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
-        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, 0.2)
+        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, 0.5)
         opacityTransferFunction.AddPoint(scalar_range[1], 1.0)
         volumeProperty.SetScalarOpacity(opacityTransferFunction)
 
@@ -188,3 +190,45 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
     renderer.ResetCamera()
     renderWindow.Render()
     renderWindowInteractor.Start()
+
+
+def visualize_slice(itk_image, slice_index, orientation):
+    array = itk.array_from_image(itk_image)
+    if orientation == 'sagittal':
+        slice_data = array[slice_index, :, :]
+    elif orientation == 'axial':
+        slice_data = array[:, slice_index, :]
+    elif orientation == 'coronal':
+        slice_data = array[:, :, slice_index]
+    else:
+        raise ValueError("Invalid orientation: choose 'axial', 'sagittal', or 'coronal'")
+
+    plt.imshow(slice_data, cmap='gray')
+    plt.title(f'{orientation.capitalize()} Slice {slice_index}')
+    plt.axis('on')
+    plt.show()
+
+
+def visualize_segmented_slice(segmented_slice, slice_index, orientation):
+    plt.imshow(segmented_slice, cmap='gray')
+    plt.title(f'Segmented {orientation.capitalize()} Slice {slice_index}')
+    plt.axis('on')
+    plt.show()
+
+
+def plot_slice_histogram(itk_image, slice_index, orientation):
+    array = itk.array_from_image(itk_image)
+    if orientation == 'sagittal':
+        slice_data = array[slice_index, :, :]
+    elif orientation == 'axial':
+        slice_data = array[:, slice_index, :]
+    elif orientation == 'coronal':
+        slice_data = array[:, :, slice_index]
+    else:
+        raise ValueError("Invalid orientation: choose 'axial', 'sagittal', or 'coronal'")
+
+    plt.hist(slice_data.ravel(), bins=256, range=(0, 256), fc='k', ec='k')
+    plt.title(f'Slice {slice_index}')
+    plt.xlabel('Intensity')
+    plt.ylabel('Frequency')
+    plt.show()
