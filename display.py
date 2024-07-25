@@ -10,9 +10,10 @@ def read_and_extract_slice(filepath):
     """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
     np_image = itk.GetArrayFromImage(image)
-    z_index = np_image.shape[0] // 2
+    z_index = 85 #np_image.shape[0] // 2
     central_slice = np_image[z_index, :, :]
-    return central_slice
+    flipped_slice = np.flipud(central_slice)
+    return flipped_slice
 
 def display_images2d(filepath1, filepath2):
     """Displays two images and their difference."""
@@ -90,7 +91,8 @@ def display_volume_from_path(filePath):
     renderer.ResetCamera()
     renderWindow.Render()
     renderWindowInteractor.Start()
-    
+
+
 def display_volume_from_image(vtk_image):
     scalar_range = vtk_image.GetScalarRange()
 
@@ -134,6 +136,83 @@ def display_volume_from_image(vtk_image):
 
     renderWindowInteractor.Initialize()
     renderer.ResetCamera()
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+
+def display_segmentation_and_original(original_image, segmented_image):
+    # Convert ITK images to VTK images
+    original_vtk = itk.vtk_image_from_image(original_image)
+    segmented_vtk = itk.vtk_image_from_image(segmented_image)
+
+    # Create color transfer function for original image
+    originalColorTransfer = vtk.vtkColorTransferFunction()
+    originalColorTransfer.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    originalColorTransfer.AddRGBPoint(500, 0.5, 0.5, 0.5)
+    originalColorTransfer.AddRGBPoint(1000, 1.0, 1.0, 1.0)
+
+    # Create opacity transfer function for original image
+    originalOpacityTransfer = vtk.vtkPiecewiseFunction()
+    originalOpacityTransfer.AddPoint(0, 0.0)
+    originalOpacityTransfer.AddPoint(500, 0.1)
+    originalOpacityTransfer.AddPoint(1000, 0.2)
+
+    # Create property and mapper for original volume
+    originalVolumeProperty = vtk.vtkVolumeProperty()
+    originalVolumeProperty.SetColor(originalColorTransfer)
+    originalVolumeProperty.SetScalarOpacity(originalOpacityTransfer)
+    originalVolumeProperty.ShadeOn()
+
+    originalVolumeMapper = vtk.vtkSmartVolumeMapper()
+    originalVolumeMapper.SetInputData(original_vtk)
+
+    originalVolume = vtk.vtkVolume()
+    originalVolume.SetMapper(originalVolumeMapper)
+    originalVolume.SetProperty(originalVolumeProperty)
+
+    # Create color transfer function for segmented image
+    segmentedColorTransfer = vtk.vtkColorTransferFunction()
+    segmentedColorTransfer.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    segmentedColorTransfer.AddRGBPoint(1, 1.0, 0.0, 0.0)  # Red for segmented area
+
+    # Create opacity transfer function for segmented image
+    segmentedOpacityTransfer = vtk.vtkPiecewiseFunction()
+    segmentedOpacityTransfer.AddPoint(0, 0.0)
+    segmentedOpacityTransfer.AddPoint(1, 0.5)  # Semi-transparent
+
+    # Create property and mapper for segmented volume
+    segmentedVolumeProperty = vtk.vtkVolumeProperty()
+    segmentedVolumeProperty.SetColor(segmentedColorTransfer)
+    segmentedVolumeProperty.SetScalarOpacity(segmentedOpacityTransfer)
+    segmentedVolumeProperty.ShadeOn()
+
+    segmentedVolumeMapper = vtk.vtkSmartVolumeMapper()
+    segmentedVolumeMapper.SetInputData(segmented_vtk)
+
+    segmentedVolume = vtk.vtkVolume()
+    segmentedVolume.SetMapper(segmentedVolumeMapper)
+    segmentedVolume.SetProperty(segmentedVolumeProperty)
+
+    # Create renderer and add volumes
+    renderer = vtk.vtkRenderer()
+    renderer.AddVolume(originalVolume)
+    renderer.AddVolume(segmentedVolume)
+    renderer.SetBackground(0.1, 0.1, 0.1)
+
+    # Create render window
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(800, 800)
+
+    # Create interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Set interactor style
+    interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
+    renderWindowInteractor.SetInteractorStyle(interactorStyle)
+
+    # Initialize and start the interactor
+    renderWindowInteractor.Initialize()
     renderWindow.Render()
     renderWindowInteractor.Start()
 
@@ -188,3 +267,24 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
     renderer.ResetCamera()
     renderWindow.Render()
     renderWindowInteractor.Start()
+    
+    
+def tmp(filepath):
+    # Read the image and place a 3x3 white square in coord x y
+    image = read_and_extract_slice(filepath)
+    x = 188
+    y = 120
+    print("first")
+    for i in range(3):
+        for j in range(3):
+            print(image[x+i, y+j], end=' ')
+    x2 = 175
+    y2 = 98
+    print("\nsecond")
+    for i in range(3):
+        for j in range(3):
+            print(image[x2+i, y2+j], end=' ')
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image, cmap='gray', origin='lower')
+    plt.title('Image with 3x3 white square')
+    plt.show()

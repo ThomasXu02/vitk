@@ -2,10 +2,10 @@ import os
 import itk
 import vtk
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 from vtk.util import numpy_support
 
+import display
 from display import *
 
 # File paths
@@ -74,12 +74,80 @@ def itk_to_vtk_image(itk_image):
     vtk_image.SetSpacing(itk_image.GetSpacing())
     vtk_image.SetOrigin(itk_image.GetOrigin())
     return vtk_image
-
+    
 def register_images(filepath1, filepath2):
     registered_image = get_register_images(filepath1, filepath2)
     return itk_to_vtk_image(registered_image)
 
+def seg_region_growing(image):
+    itk_image = itk.GetImageFromArray(image.astype(np.float32))
+    
+    ImageType = itk.Image[itk.F, 2]
+    seg = itk.ConnectedThresholdImageFilter[ImageType, ImageType].New()
+    print(type(itk_image))
+    seg.SetInput(itk_image)
+    
+    p1 = (120, 188)
+    p2 = (98, 175)
+    seg.AddSeed(p1)
+    seg.AddSeed(p2)
+    
+    seg.SetLower(330)
+    seg.SetUpper(1000)
+    
+    seg.SetReplaceValue(900)
+    seg.Update()
+    output_array = itk.GetArrayFromImage(seg.GetOutput())
+    return output_array
+
+def seg_region_growing_3d(original_image):
+    FloatImageType = itk.Image[itk.F, 3]
+    if not isinstance(original_image, FloatImageType):
+        cast_filter = itk.CastImageFilter[type(original_image), FloatImageType].New()
+        cast_filter.SetInput(original_image)
+        cast_filter.Update()
+        itk_image = cast_filter.GetOutput()
+    else:
+        itk_image = original_image
+    
+    np_image = itk.array_from_image(itk_image)
+    image_min = np.min(np_image)
+    image_max = np.max(np_image)
+    
+    print("3d Image min/max:", image_min, image_max)
+    
+    point1 = (85, 120, 188)
+    point2 = (85, 98, 175)
+    print("Intensity at seed point 1:", np_image[point1])
+    print("Intensity at seed point 2:", np_image[point2])
+    
+    print(type(itk_image))
+    
+    seg = itk.ConnectedThresholdImageFilter[FloatImageType, FloatImageType].New()
+    seg.SetInput(itk_image)
+
+    seg.AddSeed(point1)
+    seg.AddSeed(point2)
+
+    seg.SetLower(280.0)
+    seg.SetUpper(900.0)
+    seg.SetReplaceValue(1000.0)
+    
+    seg.Update()
+    
+    segmented_image = seg.GetOutput()
+    
+    arr = itk.GetArrayFromImage(segmented_image)[85, :, :]
+    print("Segmented Image min/max:", np.min(arr), np.max(arr))
+
+    plt.figure()
+    plt.imshow(itk.GetArrayViewFromImage(segmented_image)[85, :, :], cmap='gray', origin='lower')
+    plt.title("Segmented Image")
+    plt.show()
+    
+    return segmented_image
+
 if __name__ == "__main__":
-    reg = register_images(filepath1, filepath2)
-    original_vtk_image = itk_to_vtk_image(itk.imread(filepath1))
-    display_two_volumes(original_vtk_image, reg)
+    original_image = itk.imread(filepath1)
+    
+    segmented_image = seg_region_growing_3d(original_image)
