@@ -1,5 +1,4 @@
 *.txt
 tp/*
-ressources/*
 *.ipynb
 __pycache__/*
