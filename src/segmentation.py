@@ -47,8 +47,6 @@ def seg_region_growing_3d(original_image):
         itk_image = original_image
 
     np_image = itk.array_from_image(itk_image)
-    image_min = np.min(np_image)
-    image_max = np.max(np_image)
 
     segmented_np = np.zeros_like(np_image)
     for z in range(60, 100):
@@ -64,7 +62,6 @@ def seg_region_growing_3d(original_image):
 
 
 def display_segmented_tumor_2d(filepath1):
-    original_image = itk.imread(filepath1)
     temp = read_and_extract_slice(filepath1)
     segmented = seg_region_growing_2d(temp)
 
@@ -99,4 +96,4 @@ def display_segmented_tumor_3d(filepath1, filepath2):
     seg2 = itk_to_vtk_image(seg2)
 
     # Display the two volumes
-    display_two_volumes(seg1, seg2)
+    display_two_volumes(seg1, seg2, itk_to_vtk_image(original_image_flipped))
