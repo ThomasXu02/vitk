@@ -1,11 +1,9 @@
 import itk
 import vtk
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-from vtk.util import numpy_support
 
-def read_and_extract_slice(filepath, z_index=85):
+
 def read_and_extract_slice(filepath, z_index=85):
     """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
@@ -16,33 +14,35 @@ def read_and_extract_slice(filepath, z_index=85):
     flipped_slice = np.flipud(central_slice)
     return flipped_slice
 
+
 def display_images2d(filepath1, filepath2):
     """Displays two images and their difference."""
-    
+
     slice1 = read_and_extract_slice(filepath1)
     slice2 = read_and_extract_slice(filepath2)
-    
+
     diff_slice = np.abs(slice1 - slice2)
-    
+
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-    
+
     # Display the first image slice
     axs[0].imshow(slice1, cmap='gray', origin='lower')
     axs[0].set_title('Central Slice - Image 1')
     axs[0].axis('off')
-    
+
     # Display the second image slice
     axs[1].imshow(slice2, cmap='gray', origin='lower')
     axs[1].set_title('Central Slice - Image 2')
     axs[1].axis('off')
-    
+
     # Display the difference slice
     axs[2].imshow(diff_slice, cmap='gray', origin='lower')
     axs[2].set_title('Difference Slice')
     axs[2].axis('off')
-    
+
     plt.show()
-    
+
+
 def display_volume_from_path(filePath):
     reader = vtk.vtkNrrdReader()
     reader.SetFileName(filePath)
@@ -140,6 +140,7 @@ def display_volume_from_image(vtk_image):
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+
 def display_segmentation_and_original(original_image, segmented_image):
     original_vtk = itk.vtk_image_from_image(original_image)
     segmented_vtk = itk.vtk_image_from_image(segmented_image)
@@ -205,6 +206,7 @@ def display_segmentation_and_original(original_image, segmented_image):
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+
 def display_volume(registered_vtk_image, color):
     def create_volume(vtk_image, color, opacity_max=0.5):
         scalar_range = vtk_image.GetScalarRange()
@@ -213,19 +215,19 @@ def display_volume(registered_vtk_image, color):
         volumeProperty = vtk.vtkVolumeProperty()
         volumeProperty.ShadeOn()
         volumeProperty.SetInterpolationTypeToLinear()
-        
+
         colorTransferFunction = vtk.vtkColorTransferFunction()
         colorTransferFunction.AddRGBPoint(scalar_range[0], 0.0, 0.0, 0.0)
         colorTransferFunction.AddRGBPoint(scalar_range[1], *color)
         volumeProperty.SetColor(colorTransferFunction)
-        
+
         opacityTransferFunction = vtk.vtkPiecewiseFunction()
         opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, opacity_max * 0.5)
         opacityTransferFunction.AddPoint(scalar_range[1], opacity_max)
         volumeProperty.SetScalarOpacity(opacityTransferFunction)
-        
+
         volume = vtk.vtkVolume()
         volume.SetMapper(volumeMapper)
         volume.SetProperty(volumeProperty)
@@ -251,6 +253,7 @@ def display_volume(registered_vtk_image, color):
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+
 def display_two_volumes(original_vtk_image, registered_vtk_image, skull_vtk_image):
     def create_volume(vtk_image, color, opacity_max=0.5):
         scalar_range = vtk_image.GetScalarRange()
@@ -259,19 +262,19 @@ def display_two_volumes(original_vtk_image, registered_vtk_image, skull_vtk_imag
         volumeProperty = vtk.vtkVolumeProperty()
         volumeProperty.ShadeOn()
         volumeProperty.SetInterpolationTypeToLinear()
-        
+
         colorTransferFunction = vtk.vtkColorTransferFunction()
         colorTransferFunction.AddRGBPoint(scalar_range[0], 0.0, 0.0, 0.0)
         colorTransferFunction.AddRGBPoint(scalar_range[1], *color)
         volumeProperty.SetColor(colorTransferFunction)
-        
+
         opacityTransferFunction = vtk.vtkPiecewiseFunction()
         opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, opacity_max * 0.5)
         opacityTransferFunction.AddPoint(scalar_range[1], opacity_max)
         volumeProperty.SetScalarOpacity(opacityTransferFunction)
-        
+
         volume = vtk.vtkVolume()
         volume.SetMapper(volumeMapper)
         volume.SetProperty(volumeProperty)
@@ -300,7 +303,8 @@ def display_two_volumes(original_vtk_image, registered_vtk_image, skull_vtk_imag
     renderer.ResetCamera()
     renderWindow.Render()
     renderWindowInteractor.Start()
-       
+
+
 def tmp(filepath):
     image = read_and_extract_slice(filepath)
     x = 188
@@ -308,13 +312,13 @@ def tmp(filepath):
     print("first")
     for i in range(3):
         for j in range(3):
-            print(image[x+i, y+j], end=' ')
+            print(image[x + i, y + j], end=' ')
     x2 = 175
     y2 = 98
     print("\nsecond")
     for i in range(3):
         for j in range(3):
-            print(image[x2+i, y2+j], end=' ')
+            print(image[x2 + i, y2 + j], end=' ')
     plt.figure(figsize=(10, 10))
     plt.imshow(image, cmap='gray', origin='lower')
     plt.title('Image with 3x3 white square')

@@ -2,6 +2,7 @@ import itk
 import vtk
 from vtk.util import numpy_support
 
+
 def get_register_images(path1, path2):
     fixed_image = itk.imread(path1)
     moving_image = itk.imread(path2)
@@ -51,6 +52,7 @@ def get_register_images(path1, path2):
 
     return registered_image
 
+
 def itk_to_vtk_image(itk_image):
     numpy_array = itk.array_from_image(itk_image)
     vtk_image = vtk.vtkImageData()
@@ -60,6 +62,7 @@ def itk_to_vtk_image(itk_image):
     vtk_image.SetSpacing(itk_image.GetSpacing())
     vtk_image.SetOrigin(itk_image.GetOrigin())
     return vtk_image
+
 
 def vtk_to_numpy(vtk_image):
     dims = vtk_image.GetDimensions()

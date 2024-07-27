@@ -22,9 +22,9 @@ def seg_region_growing_2d(image):
         for j in range(-4, 4):
             a = itk_image.GetPixel((p1[0] + i, p1[1] + j))
             b = itk_image.GetPixel((p2[0] + i, p2[1] + j))
-            if a > low and a < high:
+            if low < a < high:
                 seg.AddSeed((p1[0] + i, p1[1] + j))
-            if b > low and b < high:
+            if low < b < high:
                 seg.AddSeed((p2[0] + i, p2[1] + j))
 
     seg.SetLower(low)
