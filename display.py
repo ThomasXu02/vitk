@@ -215,6 +215,52 @@ def display_segmentation_and_original(original_image, segmented_image):
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+def display_volume(registered_vtk_image, color):
+    def create_volume(vtk_image, color, opacity_max=0.5):
+        scalar_range = vtk_image.GetScalarRange()
+        volumeMapper = vtk.vtkGPUVolumeRayCastMapper()
+        volumeMapper.SetInputData(vtk_image)
+        volumeProperty = vtk.vtkVolumeProperty()
+        volumeProperty.ShadeOn()
+        volumeProperty.SetInterpolationTypeToLinear()
+        
+        colorTransferFunction = vtk.vtkColorTransferFunction()
+        colorTransferFunction.AddRGBPoint(scalar_range[0], 0.0, 0.0, 0.0)
+        colorTransferFunction.AddRGBPoint(scalar_range[1], *color)
+        volumeProperty.SetColor(colorTransferFunction)
+        
+        opacityTransferFunction = vtk.vtkPiecewiseFunction()
+        opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
+        opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
+        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, opacity_max * 0.5)
+        opacityTransferFunction.AddPoint(scalar_range[1], opacity_max)
+        volumeProperty.SetScalarOpacity(opacityTransferFunction)
+        
+        volume = vtk.vtkVolume()
+        volume.SetMapper(volumeMapper)
+        volume.SetProperty(volumeProperty)
+        return volume
+
+    registered_volume = create_volume(registered_vtk_image, color, opacity_max=0.9)  # Red
+
+    renderer = vtk.vtkRenderer()
+    renderer.AddVolume(registered_volume)
+    renderer.SetBackground(0.1, 0.1, 0.1)
+
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(1200, 600)
+
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+    interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
+    renderWindowInteractor.SetInteractorStyle(interactorStyle)
+
+    renderWindowInteractor.Initialize()
+    renderer.ResetCamera()
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+
 def display_two_volumes(original_vtk_image, registered_vtk_image):
     def create_volume(vtk_image, color, opacity_max=0.5):
         scalar_range = vtk_image.GetScalarRange()
@@ -241,8 +287,8 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
         volume.SetProperty(volumeProperty)
         return volume
 
-    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0), opacity_max=0.3)  # Blue
-    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.3)  # Red
+    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0), opacity_max=0.9)  # Blue
+    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.1)  # Red
 
     renderer = vtk.vtkRenderer()
     renderer.AddVolume(original_volume)
