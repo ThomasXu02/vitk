@@ -84,16 +84,26 @@ def seg_region_growing(image):
     
     ImageType = itk.Image[itk.F, 2]
     seg = itk.ConnectedThresholdImageFilter[ImageType, ImageType].New()
-    print(type(itk_image))
     seg.SetInput(itk_image)
     
     p1 = (120, 188)
     p2 = (98, 175)
-    seg.AddSeed(p1)
-    seg.AddSeed(p2)
-    
-    seg.SetLower(330)
-    seg.SetUpper(1000)
+
+    low = 420
+    high = 930
+
+    for i in range (-4, 4):
+        for j in range (-4, 4):
+            a = itk_image.GetPixel((p1[0] + i, p1[1] + j))
+            b = itk_image.GetPixel((p2[0] + i, p2[1] + j))
+            if a > low and a < high:
+                seg.AddSeed((p1[0] + i, p1[1] + j))
+            if b > low and b < high:
+                seg.AddSeed((p2[0] + i, p2[1] + j))
+
+
+    seg.SetLower(low)
+    seg.SetUpper(high)
     
     seg.SetReplaceValue(900)
     seg.Update()
@@ -114,40 +124,50 @@ def seg_region_growing_3d(original_image):
     image_min = np.min(np_image)
     image_max = np.max(np_image)
     
-    print("3d Image min/max:", image_min, image_max)
+    #print("3D Image min/max:", image_min, image_max)
     
-    point1 = (85, 120, 188)
-    point2 = (85, 98, 175)
-    print("Intensity at seed point 1:", np_image[point1])
-    print("Intensity at seed point 2:", np_image[point2])
-    
-    print(type(itk_image))
-    
-    seg = itk.ConnectedThresholdImageFilter[FloatImageType, FloatImageType].New()
-    seg.SetInput(itk_image)
+    segmented_np = np.zeros_like(np_image)
+    for z in range(60, 100):
+        segmented_slice = seg_region_growing(np_image[z])
+        segmented_np[z] = segmented_slice
 
-    seg.AddSeed(point1)
-    seg.AddSeed(point2)
-
-    seg.SetLower(280.0)
-    seg.SetUpper(900.0)
-    seg.SetReplaceValue(1000.0)
+    #print("Segmented 3D Image min/max:", np.min(segmented_np), np.max(segmented_np))
     
-    seg.Update()
-    
-    segmented_image = seg.GetOutput()
-    
-    arr = itk.GetArrayFromImage(segmented_image)[85, :, :]
-    print("Segmented Image min/max:", np.min(arr), np.max(arr))
-
-    plt.figure()
-    plt.imshow(itk.GetArrayViewFromImage(segmented_image)[85, :, :], cmap='gray', origin='lower')
-    plt.title("Segmented Image")
-    plt.show()
+    segmented_image = itk.GetImageFromArray(segmented_np)
+    segmented_image.SetOrigin(itk_image.GetOrigin())
+    segmented_image.SetSpacing(itk_image.GetSpacing())
+    segmented_image.SetDirection(itk_image.GetDirection())
     
     return segmented_image
 
+def vtk_to_numpy(vtk_image):
+    dims = vtk_image.GetDimensions()
+    vtk_array = vtk_image.GetPointData().GetScalars()
+    numpy_array = numpy_support.vtk_to_numpy(vtk_array)
+    numpy_array = numpy_array.reshape(dims[2], dims[1], dims[0])
+    return numpy_array
+
 if __name__ == "__main__":
     original_image = itk.imread(filepath1)
-    
-    segmented_image = seg_region_growing_3d(original_image)
+    original_image_np = itk.GetArrayFromImage(original_image)
+    for i in range(original_image_np.shape[0]):
+        original_image_np[i] = np.flipud(original_image_np[i])
+    original_image_flipped = itk.GetImageFromArray(original_image_np)
+    seg1 = seg_region_growing_3d(original_image_flipped)
+    seg1 = itk_to_vtk_image(seg1)
+
+
+    # Register 
+    reg = register_images(filepath1, filepath2)
+    reg_np = vtk_to_numpy(reg)
+    for i in range(reg_np.shape[0]):
+        reg_np[i] = np.flipud(reg_np[i])
+    reg_flipped = itk.GetImageFromArray(reg_np)
+    seg2 = seg_region_growing_3d(reg_flipped)
+    seg2 = itk_to_vtk_image(seg2)
+
+    # Display the two volumes
+    display_two_volumes(seg1, seg2)
+
+
+

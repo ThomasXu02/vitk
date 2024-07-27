@@ -6,11 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from vtk.util import numpy_support
 
-def read_and_extract_slice(filepath):
+def read_and_extract_slice(filepath, z_index=85):
     """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
     np_image = itk.GetArrayFromImage(image)
-    z_index = 85 #np_image.shape[0] // 2
     central_slice = np_image[z_index, :, :]
     flipped_slice = np.flipud(central_slice)
     return flipped_slice
@@ -217,36 +216,33 @@ def display_segmentation_and_original(original_image, segmented_image):
     renderWindowInteractor.Start()
 
 def display_two_volumes(original_vtk_image, registered_vtk_image):
-    def create_volume(vtk_image, color):
+    def create_volume(vtk_image, color, opacity_max=0.5):
         scalar_range = vtk_image.GetScalarRange()
-
         volumeMapper = vtk.vtkGPUVolumeRayCastMapper()
         volumeMapper.SetInputData(vtk_image)
-
         volumeProperty = vtk.vtkVolumeProperty()
         volumeProperty.ShadeOn()
         volumeProperty.SetInterpolationTypeToLinear()
-
+        
         colorTransferFunction = vtk.vtkColorTransferFunction()
         colorTransferFunction.AddRGBPoint(scalar_range[0], 0.0, 0.0, 0.0)
         colorTransferFunction.AddRGBPoint(scalar_range[1], *color)
         volumeProperty.SetColor(colorTransferFunction)
-
+        
         opacityTransferFunction = vtk.vtkPiecewiseFunction()
         opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
-        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, 0.2)
-        opacityTransferFunction.AddPoint(scalar_range[1], 1.0)
+        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, opacity_max * 0.5)
+        opacityTransferFunction.AddPoint(scalar_range[1], opacity_max)
         volumeProperty.SetScalarOpacity(opacityTransferFunction)
-
+        
         volume = vtk.vtkVolume()
         volume.SetMapper(volumeMapper)
         volume.SetProperty(volumeProperty)
-
         return volume
 
-    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0))  # Blue
-    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0))  # Red
+    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0), opacity_max=0.3)  # Blue
+    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.3)  # Red
 
     renderer = vtk.vtkRenderer()
     renderer.AddVolume(original_volume)
@@ -259,7 +255,6 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
 
     renderWindowInteractor = vtk.vtkRenderWindowInteractor()
     renderWindowInteractor.SetRenderWindow(renderWindow)
-
     interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
     renderWindowInteractor.SetInteractorStyle(interactorStyle)
 
