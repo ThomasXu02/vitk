@@ -1,7 +1,7 @@
 # vitk
 
 ## Membres   
-XU Thomas - XU David - BERKANT AKDOGAN Kévin   
+XU Thomas - XU David - AKDOGAN Kévin Berkant  
 
 ## Projet
 
