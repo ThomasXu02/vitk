@@ -66,8 +66,11 @@ puissons observer les deux simultanément.
 Pour se rendre compte que la tumeur rouge est plus grande que la bleue,
 l'opacité des deux tumeurs peuvent être fixer à une valeur égale.
 Pour cela:
+
 	fichier display.py:
+ 
 	  fonction display_two_volumes:
-		dans l'appel a la fonction create_volume, modifier le paramètre opacity
+	
+  	    dans l'appel a la fonction create_volume, modifier le paramètre opacity
 
 ![Visualisation réelle des tumeurs](ressources/same_opacity.png)
