@@ -40,7 +40,8 @@ Les images 2D ne contenant pas la tumeur n'ont donc pas de seed.
 La méthode est semi-automatique dans le cadre où les seeds sont placée par
 l'utilisateur.
 
-![Tumeur segmentée](ressources/seg.png)
+![Tumeur segmentée en 2D](ressources/seg2D.png)
+![Tumeur segmentée en 3D](ressources/seg.png)
 
 
 ### Visualisation
@@ -59,9 +60,14 @@ En effet la tumeur bleue est plus petite que la tumeur rouge.
 
 Ici, nous avons choisi de réduire l'opacité de la tumeur rouge pour que nous
 puissons observer les deux simultanément.
+
+![Visualisation des 2 tumeurs](ressources/faible_red_opacity.png)
+
 Pour se rendre compte que la tumeur rouge est plus grande que la bleue,
 l'opacité des deux tumeurs peuvent être fixer à une valeur égale.
 Pour cela:
 	fichier display.py:
 	  fonction display_two_volumes:
 		dans l'appel a la fonction create_volume, modifier le paramètre opacity
+
+![Visualisation réelle des tumeurs](ressources/same_opacity.png)
