@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 from vtk.util import numpy_support
 
 def read_and_extract_slice(filepath, z_index=85):
+def read_and_extract_slice(filepath, z_index=85):
     """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
     np_image = itk.GetArrayFromImage(image)
     central_slice = np_image[z_index, :, :]
+    flipped_slice = np.flipud(central_slice)
+    return flipped_slice
     flipped_slice = np.flipud(central_slice)
     return flipped_slice
 
