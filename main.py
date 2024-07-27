@@ -167,7 +167,7 @@ if __name__ == "__main__":
     seg2 = itk_to_vtk_image(seg2)
 
     # Display the two volumes
-    display_two_volumes(seg1, seg2)
+    display_two_volumes(seg1, seg2, itk_to_vtk_image(original_image_flipped))
 
 
 

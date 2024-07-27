@@ -46,9 +46,9 @@ l'utilisateur.
 
 ### Visualisation
 
-Pour chaque image présent dans le dossier ressource, la couleur rouge représente
-un traitement fait sur la première image ("Data/case6_gre1.nrrd") et le bleu
-représente les traitement effectuer sur la deuxième image 
+Pour chaque image présent dans le dossier ressource, la couleur bleue représente
+la tumeur segmentée sur la première image ("Data/case6_gre1.nrrd") et le bleu
+représente celle sur la deuxième image 
 ("Data/case6_gre2.nrrd").
 
 Le main.py n'affiche que le but final du projet qui est de visualiser la 
@@ -56,7 +56,7 @@ différence entre les deux tumeurs dans le temps.
 
 On peut ainsi voir qu'en considérant que "Data/case6_gre2.nrrd" est l'image plus
 tardif alors la tumeur a diminuer de taille dans le temps.
-En effet la tumeur bleue est plus petite que la tumeur rouge.
+En effet la tumeur rouge est plus petite que la tumeur bleue.
 
 Ici, nous avons choisi de réduire l'opacité de la tumeur rouge pour que nous
 puissons observer les deux simultanément.
@@ -64,7 +64,7 @@ puissons observer les deux simultanément.
 ![Visualisation des 2 tumeurs](ressources/faible_red_opacity.png)
 
 Pour se rendre compte que la tumeur rouge est plus grande que la bleue,
-l'opacité des deux tumeurs peuvent être fixer à une valeur égale.
+nous pouvons jouer avec les opacités des tumeurs.
 Pour cela:
 
 	fichier display.py:
@@ -73,4 +73,4 @@ Pour cela:
 	
   	    dans l'appel a la fonction create_volume, modifier le paramètre opacity
 
-![Visualisation réelle des tumeurs](ressources/same_opacity.png)
+![Visualisation réelle des tumeurs](ressources/reel.png)
