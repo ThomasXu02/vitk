@@ -2,20 +2,21 @@ import os
 import itk
 import vtk
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-from vtk.util import numpy_support
 
 
-def read_and_extract_slice(filepath):
+def read_and_extract_slice(filepath, z_index=85):
+    """Reads an NRRD file and extracts the central slice."""
     image = itk.imread(filepath)
     np_image = itk.GetArrayFromImage(image)
-    z_index = np_image.shape[0] // 2
     central_slice = np_image[z_index, :, :]
-    return central_slice
+    flipped_slice = np.flipud(central_slice)
+    return flipped_slice
 
 
 def display_images2d(filepath1, filepath2):
+    """Displays two images and their difference."""
+
     slice1 = read_and_extract_slice(filepath1)
     slice2 = read_and_extract_slice(filepath2)
 
@@ -139,13 +140,89 @@ def display_volume_from_image(vtk_image):
     renderWindowInteractor.Start()
 
 
-def display_two_volumes(original_vtk_image, registered_vtk_image):
-    def create_volume(vtk_image, color):
-        scalar_range = vtk_image.GetScalarRange()
+def display_segmentation_and_original(original_image, segmented_image):
+    # Convert ITK images to VTK images
+    original_vtk = itk.vtk_image_from_image(original_image)
+    segmented_vtk = itk.vtk_image_from_image(segmented_image)
 
+    # Create color transfer function for original image
+    originalColorTransfer = vtk.vtkColorTransferFunction()
+    originalColorTransfer.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    originalColorTransfer.AddRGBPoint(500, 0.5, 0.5, 0.5)
+    originalColorTransfer.AddRGBPoint(1000, 1.0, 1.0, 1.0)
+
+    # Create opacity transfer function for original image
+    originalOpacityTransfer = vtk.vtkPiecewiseFunction()
+    originalOpacityTransfer.AddPoint(0, 0.0)
+    originalOpacityTransfer.AddPoint(500, 0.1)
+    originalOpacityTransfer.AddPoint(1000, 0.2)
+
+    # Create property and mapper for original volume
+    originalVolumeProperty = vtk.vtkVolumeProperty()
+    originalVolumeProperty.SetColor(originalColorTransfer)
+    originalVolumeProperty.SetScalarOpacity(originalOpacityTransfer)
+    originalVolumeProperty.ShadeOn()
+
+    originalVolumeMapper = vtk.vtkSmartVolumeMapper()
+    originalVolumeMapper.SetInputData(original_vtk)
+
+    originalVolume = vtk.vtkVolume()
+    originalVolume.SetMapper(originalVolumeMapper)
+    originalVolume.SetProperty(originalVolumeProperty)
+
+    # Create color transfer function for segmented image
+    segmentedColorTransfer = vtk.vtkColorTransferFunction()
+    segmentedColorTransfer.AddRGBPoint(0, 0.0, 0.0, 0.0)
+    segmentedColorTransfer.AddRGBPoint(1, 1.0, 0.0, 0.0)  # Red for segmented area
+
+    # Create opacity transfer function for segmented image
+    segmentedOpacityTransfer = vtk.vtkPiecewiseFunction()
+    segmentedOpacityTransfer.AddPoint(0, 0.0)
+    segmentedOpacityTransfer.AddPoint(1, 0.5)  # Semi-transparent
+
+    # Create property and mapper for segmented volume
+    segmentedVolumeProperty = vtk.vtkVolumeProperty()
+    segmentedVolumeProperty.SetColor(segmentedColorTransfer)
+    segmentedVolumeProperty.SetScalarOpacity(segmentedOpacityTransfer)
+    segmentedVolumeProperty.ShadeOn()
+
+    segmentedVolumeMapper = vtk.vtkSmartVolumeMapper()
+    segmentedVolumeMapper.SetInputData(segmented_vtk)
+
+    segmentedVolume = vtk.vtkVolume()
+    segmentedVolume.SetMapper(segmentedVolumeMapper)
+    segmentedVolume.SetProperty(segmentedVolumeProperty)
+
+    # Create renderer and add volumes
+    renderer = vtk.vtkRenderer()
+    renderer.AddVolume(originalVolume)
+    renderer.AddVolume(segmentedVolume)
+    renderer.SetBackground(0.1, 0.1, 0.1)
+
+    # Create render window
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetSize(800, 800)
+
+    # Create interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Set interactor style
+    interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
+    renderWindowInteractor.SetInteractorStyle(interactorStyle)
+
+    # Initialize and start the interactor
+    renderWindowInteractor.Initialize()
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+
+
+def display_two_volumes(original_vtk_image, registered_vtk_image):
+    def create_volume(vtk_image, color, opacity_max=0.5):
+        scalar_range = vtk_image.GetScalarRange()
         volumeMapper = vtk.vtkGPUVolumeRayCastMapper()
         volumeMapper.SetInputData(vtk_image)
-
         volumeProperty = vtk.vtkVolumeProperty()
         volumeProperty.ShadeOn()
         volumeProperty.SetInterpolationTypeToLinear()
@@ -158,18 +235,17 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
         opacityTransferFunction = vtk.vtkPiecewiseFunction()
         opacityTransferFunction.AddPoint(scalar_range[0], 0.0)
         opacityTransferFunction.AddPoint(scalar_range[1] * 0.3, 0.0)
-        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, 0.5)
-        opacityTransferFunction.AddPoint(scalar_range[1], 1.0)
+        opacityTransferFunction.AddPoint(scalar_range[1] * 0.7, opacity_max * 0.5)
+        opacityTransferFunction.AddPoint(scalar_range[1], opacity_max)
         volumeProperty.SetScalarOpacity(opacityTransferFunction)
 
         volume = vtk.vtkVolume()
         volume.SetMapper(volumeMapper)
         volume.SetProperty(volumeProperty)
-
         return volume
 
-    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0))  # Blue
-    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0))  # Red
+    original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0), opacity_max=0.3)  # Blue
+    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.3)  # Red
 
     renderer = vtk.vtkRenderer()
     renderer.AddVolume(original_volume)
@@ -182,7 +258,6 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
 
     renderWindowInteractor = vtk.vtkRenderWindowInteractor()
     renderWindowInteractor.SetRenderWindow(renderWindow)
-
     interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
     renderWindowInteractor.SetInteractorStyle(interactorStyle)
 
@@ -192,43 +267,22 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
     renderWindowInteractor.Start()
 
 
-def visualize_slice(itk_image, slice_index, orientation):
-    array = itk.array_from_image(itk_image)
-    if orientation == 'sagittal':
-        slice_data = array[slice_index, :, :]
-    elif orientation == 'axial':
-        slice_data = array[:, slice_index, :]
-    elif orientation == 'coronal':
-        slice_data = array[:, :, slice_index]
-    else:
-        raise ValueError("Invalid orientation: choose 'axial', 'sagittal', or 'coronal'")
-
-    plt.imshow(slice_data, cmap='gray')
-    plt.title(f'{orientation.capitalize()} Slice {slice_index}')
-    plt.axis('on')
-    plt.show()
-
-
-def visualize_segmented_slice(segmented_slice, slice_index, orientation):
-    plt.imshow(segmented_slice, cmap='gray')
-    plt.title(f'Segmented {orientation.capitalize()} Slice {slice_index}')
-    plt.axis('on')
-    plt.show()
-
-
-def plot_slice_histogram(itk_image, slice_index, orientation):
-    array = itk.array_from_image(itk_image)
-    if orientation == 'sagittal':
-        slice_data = array[slice_index, :, :]
-    elif orientation == 'axial':
-        slice_data = array[:, slice_index, :]
-    elif orientation == 'coronal':
-        slice_data = array[:, :, slice_index]
-    else:
-        raise ValueError("Invalid orientation: choose 'axial', 'sagittal', or 'coronal'")
-
-    plt.hist(slice_data.ravel(), bins=256, range=(0, 256), fc='k', ec='k')
-    plt.title(f'Slice {slice_index}')
-    plt.xlabel('Intensity')
-    plt.ylabel('Frequency')
+def tmp(filepath):
+    # Read the image and place a 3x3 white square in coord x y
+    image = read_and_extract_slice(filepath)
+    x = 188
+    y = 120
+    print("first")
+    for i in range(3):
+        for j in range(3):
+            print(image[x + i, y + j], end=' ')
+    x2 = 175
+    y2 = 98
+    print("\nsecond")
+    for i in range(3):
+        for j in range(3):
+            print(image[x2 + i, y2 + j], end=' ')
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image, cmap='gray', origin='lower')
+    plt.title('Image with 3x3 white square')
     plt.show()
