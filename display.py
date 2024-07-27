@@ -287,8 +287,9 @@ def display_two_volumes(original_vtk_image, registered_vtk_image):
         volume.SetProperty(volumeProperty)
         return volume
 
+	# If you want to change opacity:
     original_volume = create_volume(original_vtk_image, (0.0, 0.0, 1.0), opacity_max=0.9)  # Blue
-    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.1)  # Red
+    registered_volume = create_volume(registered_vtk_image, (1.0, 0.0, 0.0), opacity_max=0.9)  # Red
 
     renderer = vtk.vtkRenderer()
     renderer.AddVolume(original_volume)
